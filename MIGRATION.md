@@ -12,7 +12,7 @@ Separar por responsabilidades:
 
 1. Crear los tres repos remotos vacios.
 2. Subir `web-telecom` a `telecom-spa`.
-3. Subir `servicios-telecom/cont-reportespiolis` a `telecom-reportespiolis`.
+3. Subir `telecom-reportespiolis` a su repo remoto dedicado.
 4. Subir `telecom-deploy` a su repo.
 5. Configurar CI para publicar imagenes en registry:
    - `ghcr.io/<org>/telecom-spa:<tag>`

@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 SPA_REPO="${SPA_REPO:-${ROOT_DIR}/web-telecom}"
-REPORTES_REPO="${REPORTES_REPO:-${ROOT_DIR}/servicios-telecom/cont-reportespiolis}"
+REPORTES_REPO="${REPORTES_REPO:-${ROOT_DIR}/telecom-reportespiolis}"
 
 echo "Building SPA image from: ${SPA_REPO}"
 docker build -t webtelecom-spa:latest -f "${SPA_REPO}/apps/spa/Dockerfile" "${SPA_REPO}"
