@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCES_DIR="${ROOT_DIR}/sources"
+
+DO_UPDATE=0
+DO_DEPLOY=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --update)
+      DO_UPDATE=1
+      ;;
+    --deploy)
+      DO_DEPLOY=1
+      ;;
+    -h|--help)
+      cat <<'EOF'
+Uso: ./actualizar [--update] [--deploy]
+
+Opciones:
+  --update   Ejecuta pull --ff-only en repos con cambios remotos
+  --deploy   Ejecuta docker compose up -d --build al finalizar
+
+Sin opciones solo revisa estado de cambios entre local y remoto.
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Parametro no reconocido: $arg"
+      echo "Usa: ./actualizar --help"
+      exit 1
+      ;;
+  esac
+done
+
+if [ ! -f "${ROOT_DIR}/.env" ]; then
+  cp "${ROOT_DIR}/.env.example" "${ROOT_DIR}/.env"
+  echo "[info] Se creo .env desde .env.example"
+fi
+
+set -a
+. "${ROOT_DIR}/.env"
+set +a
+
+SPA_REPO_URL="${SPA_REPO_URL:-https://github.com/mferrari98/telecom-spa.git}"
+SPA_REF="${SPA_REF:-main}"
+REPORTES_REPO_URL="${REPORTES_REPO_URL:-https://github.com/mferrari98/telecom-reportespiolis.git}"
+REPORTES_REF="${REPORTES_REF:-main}"
+
+color_green='\033[0;32m'
+color_yellow='\033[1;33m'
+color_red='\033[0;31m'
+color_blue='\033[0;34m'
+color_reset='\033[0m'
+
+clone_if_missing() {
+  local url="$1"
+  local ref="$2"
+  local dir="$3"
+  if [ ! -d "${dir}/.git" ]; then
+    mkdir -p "$(dirname "${dir}")"
+    echo "[info] Clonando $(basename "${dir}") (${ref})"
+    git clone --branch "$ref" --single-branch "$url" "$dir"
+  fi
+}
+
+upstream_ref() {
+  local dir="$1"
+  local fallback="$2"
+  git -C "$dir" rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo "origin/${fallback}"
+}
+
+check_repo() {
+  local name="$1"
+  local dir="$2"
+  local ref="$3"
+
+  if [ ! -d "${dir}/.git" ]; then
+    echo -e "${color_red}[error]${color_reset} ${name}: no es repositorio git (${dir})"
+    return
+  fi
+
+  local branch
+  branch="$(git -C "$dir" rev-parse --abbrev-ref HEAD)"
+  local dirty=0
+  if [ -n "$(git -C "$dir" status --porcelain)" ]; then
+    dirty=1
+  fi
+
+  git -C "$dir" fetch origin "$ref" >/dev/null 2>&1 || true
+
+  local upstream
+  upstream="$(upstream_ref "$dir" "$ref")"
+
+  local ahead behind
+  read -r behind ahead < <(git -C "$dir" rev-list --left-right --count "${upstream}...HEAD" 2>/dev/null || echo "0 0")
+
+  local status
+  if [ "$behind" -gt 0 ] && [ "$ahead" -gt 0 ]; then
+    status="${color_yellow}divergente${color_reset}"
+  elif [ "$behind" -gt 0 ]; then
+    status="${color_yellow}actualizacion disponible${color_reset}"
+  elif [ "$ahead" -gt 0 ]; then
+    status="${color_yellow}commits locales sin push${color_reset}"
+  else
+    status="${color_green}actualizado${color_reset}"
+  fi
+
+  local dirty_text=""
+  if [ "$dirty" -eq 1 ]; then
+    dirty_text=" ${color_yellow}(cambios locales)${color_reset}"
+  fi
+
+  echo -e "${color_blue}[repo]${color_reset} ${name}"
+  echo -e "       branch: ${branch} | upstream: ${upstream}"
+  echo -e "       estado: ${status} | behind: ${behind} | ahead: ${ahead}${dirty_text}"
+
+  if [ "$DO_UPDATE" -eq 1 ] && [ "$behind" -gt 0 ]; then
+    if [ "$dirty" -eq 1 ]; then
+      echo -e "       ${color_red}skip pull:${color_reset} hay cambios locales"
+    else
+      if git -C "$dir" pull --ff-only origin "$ref" >/dev/null 2>&1; then
+        echo -e "       ${color_green}pull ok${color_reset}"
+      else
+        echo -e "       ${color_red}pull fallo${color_reset}"
+      fi
+    fi
+  fi
+
+  echo
+}
+
+clone_if_missing "$SPA_REPO_URL" "$SPA_REF" "${SOURCES_DIR}/telecom-spa"
+clone_if_missing "$REPORTES_REPO_URL" "$REPORTES_REF" "${SOURCES_DIR}/telecom-reportespiolis"
+
+echo -e "${color_blue}Revisando estado de repos...${color_reset}\n"
+
+check_repo "telecom-deploy" "$ROOT_DIR" "main"
+check_repo "telecom-spa" "${SOURCES_DIR}/telecom-spa" "$SPA_REF"
+check_repo "telecom-reportespiolis" "${SOURCES_DIR}/telecom-reportespiolis" "$REPORTES_REF"
+
+if [ "$DO_DEPLOY" -eq 1 ]; then
+  echo -e "${color_blue}[deploy]${color_reset} docker compose up -d --build"
+  docker compose -p webtelecom up -d --build --remove-orphans
+fi

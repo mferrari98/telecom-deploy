@@ -29,7 +29,7 @@ Variables principales:
 git clone https://github.com/mferrari98/telecom-deploy.git
 cd telecom-deploy
 cp .env.example .env
-./scripts/bootstrap-and-deploy.sh
+./setup
 ```
 
 El script hace todo esto automaticamente:
@@ -44,7 +44,19 @@ Los builds se realizan desde esos fuentes clonados usando Dockerfiles controlado
 ## Redeploy (actualizar codigo y reconstruir)
 
 ```bash
-./scripts/bootstrap-and-deploy.sh
+./setup
+```
+
+## Scripts principales
+
+- `./setup`: clona/actualiza repos (HTTPS), prepara `.env` faltantes y ejecuta `docker compose up -d --build`.
+- `./actualizar`: revisa cambios entre local y remoto en `telecom-deploy`, `telecom-spa` y `telecom-reportespiolis`.
+
+Opciones de `actualizar`:
+
+```bash
+./actualizar --update          # hace pull --ff-only donde haya updates
+./actualizar --update --deploy # ademas reconstruye y levanta stack
 ```
 
 ## Comandos utiles
