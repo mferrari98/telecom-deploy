@@ -8,6 +8,9 @@ RUN set -eux; \
       rm -rf /var/lib/apt/lists/*; \
       if apt-get update -o Acquire::Retries=5 && apt-get install -y --no-install-recommends --fix-missing \
         ca-certificates \
+        python3 \
+        make \
+        g++ \
         wget \
         fonts-liberation \
         libnss3 \
