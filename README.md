@@ -5,8 +5,8 @@ Repositorio de despliegue para `telecom-spa` + `telecom-reportespiolis`.
 ## Servicios
 
 - `nginx` (unica puerta de entrada publica)
-- `spa` (por imagen Docker)
-- `reportespiolis` (por imagen Docker)
+- `spa` (build local desde codigo fuente)
+- `reportespiolis` (build local desde codigo fuente)
 
 Solo `nginx` publica puerto al host (HTTPS). `spa` y `reportespiolis` quedan dentro de la red Docker.
 
@@ -20,38 +20,53 @@ Variables principales:
 
 - `WEB_HTTPS_PORT` (default `443`)
 - `BASIC_AUTH_USER` y `BASIC_AUTH_PASS` (default `comu` / `adminwiz`)
-- `SPA_IMAGE`
-- `REPORTES_IMAGE`
+- `SPA_REPO_URL` y `SPA_REF`
+- `REPORTES_REPO_URL` y `REPORTES_REF`
 
-## Levantar stack
+## Deploy desde cero
+
+```bash
+git clone https://github.com/mferrari98/telecom-deploy.git
+cd telecom-deploy
+cp .env.example .env
+./scripts/bootstrap-and-deploy.sh
+```
+
+El script hace todo esto automaticamente:
+
+- clona/actualiza `telecom-spa` en `sources/telecom-spa`
+- clona/actualiza `telecom-reportespiolis` en `sources/telecom-reportespiolis`
+- crea `.env` faltantes
+- ejecuta `docker compose up -d --build`
+
+Los builds se realizan desde esos fuentes clonados usando Dockerfiles controlados por este repo en `dockerfiles/`.
+
+## Redeploy (actualizar codigo y reconstruir)
+
+```bash
+./scripts/bootstrap-and-deploy.sh
+```
+
+## Comandos utiles
+
+Levantar/reconstruir sin bootstrap:
 
 ```bash
 docker compose -p webtelecom up -d --build
 ```
 
-## Flujo de deploy recomendado
-
-1. `telecom-spa` publica imagen versionada.
-2. `telecom-reportespiolis` publica imagen versionada.
-3. Actualizar `SPA_IMAGE` y `REPORTES_IMAGE` en este repo.
-4. Ejecutar:
+Bajar stack:
 
 ```bash
-docker compose -p webtelecom pull spa reportespiolis
-docker compose -p webtelecom up -d --build nginx
+docker compose -p webtelecom down
 ```
 
-## Uso local (sin registry)
-
-Si ya construiste localmente:
-
-- `webtelecom-spa:latest`
-- `webtelecom-reportespiolis:latest`
-
-puedes dejar los defaults y levantar directo con compose.
-
-Tambien puedes construir ambas imagenes con:
+Ver logs:
 
 ```bash
-./scripts/build-local-images.sh
+docker compose -p webtelecom logs -f nginx
 ```
+
+## Nota
+
+El deploy usa URLs HTTPS de GitHub. Si el repo es privado, necesitas credenciales git configuradas en el host para permitir el `git clone`/`git pull` del script.

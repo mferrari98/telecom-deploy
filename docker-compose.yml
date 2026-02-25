@@ -17,7 +17,10 @@ services:
       - telecom_network
 
   spa:
-    image: "${SPA_IMAGE:-webtelecom-spa:latest}"
+    build:
+      context: ./sources/telecom-spa
+      dockerfile: ../../dockerfiles/spa.Dockerfile
+    image: telecom-spa:local
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -29,7 +32,10 @@ services:
       - telecom_network
 
   reportespiolis:
-    image: "${REPORTES_IMAGE:-webtelecom-reportespiolis:latest}"
+    build:
+      context: ./sources/telecom-reportespiolis
+      dockerfile: ../../dockerfiles/reportespiolis.Dockerfile
+    image: telecom-reportespiolis:local
     restart: unless-stopped
     environment:
       DB_PATH: /app/data/database.sqlite

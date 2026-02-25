@@ -14,17 +14,14 @@ Separar por responsabilidades:
 2. Subir `web-telecom` a `telecom-spa`.
 3. Subir `telecom-reportespiolis` a su repo remoto dedicado.
 4. Subir `telecom-deploy` a su repo.
-5. Configurar CI para publicar imagenes en registry:
-   - `ghcr.io/<org>/telecom-spa:<tag>`
-   - `ghcr.io/<org>/telecom-reportespiolis:<tag>`
-6. En `telecom-deploy/.env`, fijar:
-   - `SPA_IMAGE`
-   - `REPORTES_IMAGE`
-7. Desplegar:
+5. En el host de despliegue, clonar `telecom-deploy` y crear `.env`.
+6. Configurar en `.env`:
+   - `SPA_REPO_URL` y `SPA_REF`
+   - `REPORTES_REPO_URL` y `REPORTES_REF`
+7. Desplegar (clona repos + build + up):
 
 ```bash
-docker compose -p webtelecom pull spa reportespiolis
-docker compose -p webtelecom up -d --build nginx
+./scripts/bootstrap-and-deploy.sh
 ```
 
 ## Validacion post-deploy
