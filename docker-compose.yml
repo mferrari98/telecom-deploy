@@ -13,6 +13,18 @@ services:
       - reportespiolis
     ports:
       - "${WEB_HTTPS_PORT:-443}:443"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --no-check-certificate -O - https://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - telecom_network
 
@@ -20,6 +32,8 @@ services:
     build:
       context: ./sources/telecom-spa
       dockerfile: ../../dockerfiles/spa.Dockerfile
+      args:
+        INSECURE_TLS_BUILD: "${SPA_INSECURE_TLS_BUILD:-0}"
     image: telecom-spa:local
     restart: unless-stopped
     environment:
@@ -28,6 +42,18 @@ services:
       INTERNALS_XLSX_PATH: /app/data/internos.xlsx
     volumes:
       - spa_data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - telecom_network
 

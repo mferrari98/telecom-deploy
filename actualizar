@@ -48,12 +48,42 @@ SPA_REPO_URL="${SPA_REPO_URL:-https://github.com/mferrari98/telecom-spa.git}"
 SPA_REF="${SPA_REF:-main}"
 REPORTES_REPO_URL="${REPORTES_REPO_URL:-https://github.com/mferrari98/telecom-reportespiolis.git}"
 REPORTES_REF="${REPORTES_REF:-main}"
+BASIC_AUTH_USER="${BASIC_AUTH_USER:-change-me}"
+BASIC_AUTH_PASS="${BASIC_AUTH_PASS:-change-me-strong-password}"
+
+is_insecure_basic_auth_user() {
+  case "$1" in
+    ""|"change-me"|"change-me")
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_insecure_basic_auth_pass() {
+  case "$1" in
+    ""|"change-me-strong-password"|"change-me-strong-password")
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
 
 color_green='\033[0;32m'
 color_yellow='\033[1;33m'
 color_red='\033[0;31m'
 color_blue='\033[0;34m'
 color_reset='\033[0m'
+
+if is_insecure_basic_auth_user "${BASIC_AUTH_USER}" || is_insecure_basic_auth_pass "${BASIC_AUTH_PASS}"; then
+  echo -e "${color_yellow}[warn]${color_reset} Basic Auth usa credenciales inseguras (placeholder o legado debil)."
+  echo -e "${color_yellow}[warn]${color_reset} Edita .env y rotalas antes de exponer el servicio."
+  echo
+fi
 
 clone_if_missing() {
   local url="$1"
