@@ -13,8 +13,7 @@ RUN apt-get update \
 COPY . .
 
 ARG INSECURE_TLS_BUILD=0
-RUN if [ "${INSECURE_TLS_BUILD}" = "1" ]; then \
-      printf '%s\n' \
+RUN printf '%s\n' \
       'openssl_conf = openssl_init' \
       '[openssl_init]' \
       'ssl_conf = ssl_sect' \
@@ -22,13 +21,11 @@ RUN if [ "${INSECURE_TLS_BUILD}" = "1" ]; then \
       'system_default = system_default_sect' \
       '[system_default_sect]' \
       'Options = UnsafeLegacyRenegotiation' \
-      > /tmp/openssl-legacy.cnf; \
-      NODE_OPTIONS="--openssl-config=/tmp/openssl-legacy.cnf --openssl-shared-config" \
-      NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm install --frozen-lockfile; \
-      rm -f /tmp/openssl-legacy.cnf; \
-    else \
-      pnpm install --frozen-lockfile; \
-    fi
+      > /tmp/openssl-legacy.cnf \
+  && NODE_OPTIONS="--openssl-config=/tmp/openssl-legacy.cnf --openssl-shared-config" \
+     NODE_TLS_REJECT_UNAUTHORIZED="$((1 - INSECURE_TLS_BUILD))" \
+     pnpm install --frozen-lockfile \
+  && rm -f /tmp/openssl-legacy.cnf
 RUN pnpm --filter @telecom/spa build
 
 FROM base AS runner
