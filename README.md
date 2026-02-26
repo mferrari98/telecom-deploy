@@ -24,6 +24,8 @@ Variables principales:
 - `SPA_REPO_URL` y `SPA_REF`
 - `REPORTES_REPO_URL` y `REPORTES_REF`
 
+`reportespiolis` toma `EMAIL_USER`, `EMAIL_PASS` y `EMAIL_DIFUSION` desde `sources/telecom-reportespiolis/.env`.
+
 Politica de secretos:
 
 - `.env.example` es solo plantilla (sin secretos reales).

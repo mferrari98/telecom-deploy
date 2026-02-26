@@ -63,6 +63,8 @@ services:
       dockerfile: ../../dockerfiles/reportespiolis.Dockerfile
     image: telecom-reportespiolis:local
     restart: unless-stopped
+    env_file:
+      - ./sources/telecom-reportespiolis/.env
     environment:
       DB_PATH: /app/data/database.sqlite
     volumes:
