@@ -24,6 +24,13 @@ Variables principales:
 - `SPA_REPO_URL` y `SPA_REF`
 - `REPORTES_REPO_URL` y `REPORTES_REF`
 
+Defaults de guardias en SPA (si no se definen vars en entorno):
+
+- `GUARDIAS=FERRARI,ARCE,CARO,DONATO`
+- `FECHA_REFERENCIA=2025-01-07`
+- `GUARDIA_REFERENCIA=DONATO`
+- `CELULAR_CORPORATIVO=+54 280 123-4567`
+
 `reportespiolis` toma `EMAIL_USER`, `EMAIL_PASS` y `EMAIL_DIFUSION` desde `sources/telecom-reportespiolis/.env`.
 
 Politica de secretos:
@@ -90,6 +97,16 @@ Ver logs:
 ```bash
 docker compose -p webtelecom logs -f nginx
 ```
+
+## Carga de internos.xlsx desde la web
+
+Con el stack levantado y usuario autenticado por Basic Auth:
+
+1. Abrir `https://HOST/`.
+2. Entrar en `Busqueda internos`.
+3. Hacer click en `Cargar documento` y seleccionar un archivo `.xlsx`.
+
+La SPA sube el archivo a `INTERNALS_XLSX_PATH` (por defecto `/app/data/internos.xlsx`) y refresca el cache de internos automaticamente.
 
 ## Nota
 
