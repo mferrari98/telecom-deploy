@@ -1,10 +1,13 @@
 FROM node:20-bookworm-slim AS base
 
-RUN corepack enable
-
 WORKDIR /app
 
 FROM base AS builder
+
+ARG INSECURE_TLS_BUILD=0
+
+RUN NODE_TLS_REJECT_UNAUTHORIZED="$((1 - INSECURE_TLS_BUILD))" \
+    npm install -g pnpm@9.15.3
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
@@ -12,7 +15,6 @@ RUN apt-get update \
 
 COPY . .
 
-ARG INSECURE_TLS_BUILD=0
 RUN printf '%s\n' \
       'openssl_conf = openssl_init' \
       '[openssl_init]' \
