@@ -1,0 +1,110 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Deployment orchestration for a telecom web platform. Three repos, three Docker services:
+
+- **telecom-deploy** (this repo): Compose, Nginx, Dockerfiles, bootstrap/update scripts
+- **telecom-spa**: Next.js SPA (pnpm + turbo monorepo), cloned into `sources/telecom-spa`
+- **telecom-reportespiolis**: Node.js/Express reports service (CJS), cloned into `sources/telecom-reportespiolis`
+
+Traffic flow: `Client → Nginx (HTTPS, Basic Auth) → spa | reportespiolis` (internal Docker network only).
+
+## Common Commands
+
+### Deploy from scratch
+```bash
+cp .env.example .env    # then edit credentials
+./setup                 # clones repos, prepares env (no containers)
+docker compose -p webtelecom up -d --build --remove-orphans
+```
+
+### Update and redeploy
+```bash
+./actualizar --update --deploy
+```
+
+### Check repo status (no changes)
+```bash
+./actualizar
+```
+
+### Docker operations (always use `-p webtelecom`)
+```bash
+docker compose -p webtelecom logs -f nginx
+docker compose -p webtelecom down
+docker compose -p webtelecom config
+docker compose -p webtelecom ps
+```
+
+### Static checks (no test runner exists in this repo)
+```bash
+bash -n setup
+bash -n actualizar
+bash -n scripts/bootstrap-and-deploy.sh
+sh -n nginx/40-generate-basic-auth.sh
+```
+
+### SPA commands (from `sources/telecom-spa`)
+```bash
+pnpm install && pnpm build:spa        # full build
+pnpm dev:spa                           # dev mode
+pnpm --filter @telecom/spa typecheck   # single-package typecheck
+```
+
+### Smoke test (running stack)
+```bash
+curl -k -sS -o /dev/null -w "%{http_code}\n" https://localhost/healthz   # expect 200
+curl -k -sS -o /dev/null -w "%{http_code}\n" https://localhost/           # expect 401
+```
+
+## Architecture
+
+```
+nginx/                  Reverse proxy: self-signed TLS, Basic Auth, security headers
+  nginx.conf            Route rules: / → spa:3000, /reporte/ → reportespiolis:3000, /healthz → 200
+  Dockerfile            Alpine + OpenSSL cert generation
+  40-generate-basic-auth.sh   Generates .htpasswd at container start
+
+dockerfiles/
+  spa.Dockerfile        Multi-stage (node:20, pnpm, turbo). Outputs to /app/data/
+  reportespiolis.Dockerfile   Single-stage (node:20-slim + Puppeteer/Chrome deps)
+
+scripts/
+  bootstrap-and-deploy.sh     Core logic for cloning repos and env preparation
+
+setup                   Entry point for first-time setup (wraps bootstrap-and-deploy.sh --setup-only)
+actualizar              Check/update repos, optional --update and --deploy flags
+
+sources/                Gitignored. Local clones of telecom-spa and telecom-reportespiolis
+```
+
+## Code Conventions
+
+### Shell scripts
+- Bash scripts: `#!/usr/bin/env bash` + `set -euo pipefail`
+- POSIX scripts: `#!/bin/sh` + `set -eu`
+- Quote all expansions (`"$var"`), use `local` variables, uppercase for env constants
+- Tagged logs: `[info]`, `[warn]`, `[error]`
+
+### Dockerfiles / Compose / Nginx
+- Two-space YAML indentation; match existing nginx style
+- Preserve security posture: `read_only`, `tmpfs`, `no-new-privileges`, capability dropping
+- Use `${VAR:-default}` interpolation in compose files
+
+### TypeScript (SPA)
+- Strict mode, no `any`. Use `type` aliases for payloads/props
+- PascalCase for components/types, camelCase for vars/functions, UPPER_SNAKE_CASE for constants
+
+### Node/Express (reportespiolis)
+- CommonJS (`require`/`module.exports`), semicolon-heavy
+- Use `asyncHandler` wrapper, `AppError`/`ValidationError` for HTTP errors, `logamarillo()` for logging
+
+## Security Rules
+
+- `.env` is local-only (gitignored). `.env.example` has placeholders only.
+- Never commit real credentials. Weak/legacy values (`comu`, `adminwiz`, `change-me`) trigger script warnings.
+- Do not weaken TLS/auth defaults or remove healthchecks unless explicitly requested.
+- Env loading pattern: `set -a; . ./.env; set +a`

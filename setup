@@ -2,5 +2,44 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "${ROOT_DIR}/scripts/common.sh"
 
-exec "${ROOT_DIR}/scripts/bootstrap-and-deploy.sh" --setup-only "$@"
+warn_insecure_credentials
+
+SPA_DIR="${SOURCES_DIR}/telecom-spa"
+REPORTES_DIR="${SOURCES_DIR}/telecom-reportespiolis"
+
+mkdir -p "${SOURCES_DIR}"
+
+clone_repo() {
+  local url="$1"
+  local ref="$2"
+  local dir="$3"
+  local name
+  name="$(basename "$dir")"
+
+  if [ -d "${dir}/.git" ]; then
+    echo "[info] ${name} ya existe, salteando"
+    return
+  fi
+
+  echo "[info] Clonando ${name} (${ref})"
+  git clone --branch "$ref" --single-branch "$url" "$dir"
+}
+
+clone_repo "$SPA_REPO_URL" "$SPA_REF" "$SPA_DIR"
+clone_repo "$REPORTES_REPO_URL" "$REPORTES_REF" "$REPORTES_DIR"
+
+if [ ! -f "${REPORTES_DIR}/.env" ]; then
+  if [ -f "${REPORTES_DIR}/example-env" ]; then
+    cp "${REPORTES_DIR}/example-env" "${REPORTES_DIR}/.env"
+    echo "[info] Creado ${REPORTES_DIR}/.env desde example-env"
+  elif [ -f "${REPORTES_DIR}/.env.example" ]; then
+    cp "${REPORTES_DIR}/.env.example" "${REPORTES_DIR}/.env"
+    echo "[info] Creado ${REPORTES_DIR}/.env desde .env.example"
+  fi
+fi
+
+echo
+echo "[info] Setup completo. Para levantar los contenedores:"
+echo "  docker compose -p webtelecom up -d --build --remove-orphans"

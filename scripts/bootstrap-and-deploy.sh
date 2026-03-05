@@ -18,50 +18,10 @@ for arg in "$@"; do
   esac
 done
 
-if [ ! -f .env ]; then
-  cp .env.example .env
-  echo "Created .env from .env.example"
-fi
+. "${ROOT_DIR}/scripts/common.sh"
 
-set -a
-. ./.env
-set +a
+warn_insecure_credentials
 
-SPA_REPO_URL="${SPA_REPO_URL:-https://github.com/mferrari98/telecom-spa.git}"
-SPA_REF="${SPA_REF:-main}"
-REPORTES_REPO_URL="${REPORTES_REPO_URL:-https://github.com/mferrari98/telecom-reportespiolis.git}"
-REPORTES_REF="${REPORTES_REF:-main}"
-BASIC_AUTH_USER="${BASIC_AUTH_USER:-change-me}"
-BASIC_AUTH_PASS="${BASIC_AUTH_PASS:-change-me-strong-password}"
-
-is_insecure_basic_auth_user() {
-  case "$1" in
-    ""|"change-me"|"change-me")
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
-is_insecure_basic_auth_pass() {
-  case "$1" in
-    ""|"change-me-strong-password"|"change-me-strong-password")
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
-if is_insecure_basic_auth_user "${BASIC_AUTH_USER}" || is_insecure_basic_auth_pass "${BASIC_AUTH_PASS}"; then
-  echo "[warn] Basic Auth usa credenciales inseguras (placeholder o legado debil)."
-  echo "[warn] Edita .env y rotalas antes de exponer el servicio."
-fi
-
-SOURCES_DIR="${ROOT_DIR}/sources"
 SPA_DIR="${SOURCES_DIR}/telecom-spa"
 REPORTES_DIR="${SOURCES_DIR}/telecom-reportespiolis"
 

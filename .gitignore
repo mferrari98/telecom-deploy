@@ -1,2 +1,4 @@
 .env
 sources/
+data/
+backups/

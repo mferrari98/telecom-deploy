@@ -5,14 +5,16 @@ services:
       dockerfile: nginx/Dockerfile
     image: telecom-deploy-nginx:latest
     restart: unless-stopped
-    environment:
-      BASIC_AUTH_USER: "${BASIC_AUTH_USER:-change-me}"
-      BASIC_AUTH_PASS: "${BASIC_AUTH_PASS:-change-me-strong-password}"
     depends_on:
-      - spa
-      - reportespiolis
+      spa:
+        condition: service_healthy
+      reportespiolis:
+        condition: service_healthy
     ports:
+      - "${WEB_HTTP_PORT:-80}:80"
       - "${WEB_HTTPS_PORT:-443}:443"
+    volumes:
+      - nginx_certs:/etc/nginx/certs
     read_only: true
     tmpfs:
       - /var/cache/nginx
@@ -25,6 +27,16 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - telecom_network
 
@@ -40,8 +52,10 @@ services:
       NODE_ENV: production
       DEUDORES_DB_PATH: /app/data/deudores.sqlite
       INTERNALS_XLSX_PATH: /app/data/internos.xlsx
+      SESSION_SECRET: "${SESSION_SECRET:-change-me-to-a-random-64-char-string}"
+      USERS_JSON_PATH: /app/data/users.json
     volumes:
-      - spa_data:/app/data
+      - ./data/spa:/app/data
     read_only: true
     tmpfs:
       - /tmp
@@ -54,6 +68,16 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - telecom_network
 
@@ -68,16 +92,35 @@ services:
     environment:
       DB_PATH: /app/data/database.sqlite
     volumes:
-      - /mnt/compartido:/mnt/compartido:ro
-      - reportes_data:/app/data
-      - reportes_logs:/app/logs
+      - "${COMPARTIDO_PATH:-/mnt/compartido}:/mnt/compartido:ro"
+      - ./data/reportes:/app/data
+      - ./data/reportes-logs:/app/logs
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - telecom_network
 
 volumes:
-  spa_data:
-  reportes_data:
-  reportes_logs:
+  nginx_certs:
 
 networks:
   telecom_network:
