@@ -37,7 +37,7 @@ Politica de secretos:
 
 - `.env.example` es solo plantilla (sin secretos reales).
 - `.env` local no se versiona (`.gitignore`).
-- No usar credenciales debiles o de ejemplo (`change-me`, `change-me-strong-password`, `comu`, `adminwiz`).
+- No usar credenciales debiles o de ejemplo (placeholders, valores legacy conocidos).
 - Si detecta esos valores, `./setup` y `./actualizar` muestran advertencia para rotacion.
 
 ## Deploy desde cero

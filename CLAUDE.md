@@ -105,6 +105,6 @@ sources/                Gitignored. Local clones of telecom-spa and telecom-repo
 ## Security Rules
 
 - `.env` is local-only (gitignored). `.env.example` has placeholders only.
-- Never commit real credentials. Weak/legacy values (`comu`, `adminwiz`, `change-me`) trigger script warnings.
+- Never commit real credentials. Weak/legacy values and placeholders trigger script warnings.
 - Do not weaken TLS/auth defaults or remove healthchecks unless explicitly requested.
 - Env loading pattern: `set -a; . ./.env; set +a`

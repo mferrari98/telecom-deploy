@@ -113,8 +113,8 @@ Run:
 
 ```bash
 curl -k -sS -o /dev/null -w "%{http_code}\n" https://localhost/
-curl -k -sS -u comu:adminwiz -o /dev/null -w "%{http_code}\n" https://localhost/monitor/
-curl -k -sS -u comu:adminwiz -o /dev/null -w "%{http_code}\n" https://localhost/reporte/
+curl -k -sS -u "$BASIC_AUTH_USER:$BASIC_AUTH_PASS" -o /dev/null -w "%{http_code}\n" https://localhost/monitor/
+curl -k -sS -u "$BASIC_AUTH_USER:$BASIC_AUTH_PASS" -o /dev/null -w "%{http_code}\n" https://localhost/reporte/
 ```
 
 Expected:

@@ -6,7 +6,7 @@ Reduce immediate credential exposure risk in deploy workflows without changing r
 
 ## Scope
 
-- Stop relying on weak fallback credentials (`comu` / `adminwiz`) in scripts and auth generation.
+- Stop relying on weak fallback credentials in scripts and auth generation.
 - Keep only placeholder values in tracked env templates.
 - Ensure local runtime `.env` remains untracked and validated before deploy.
 - Preserve current source-bootstrap flow (`./setup` then `docker compose -p webtelecom up -d --build --remove-orphans`).
@@ -41,7 +41,7 @@ Reduce immediate credential exposure risk in deploy workflows without changing r
 
 1. User runs `./setup` or `./actualizar`.
 2. Script loads `.env` and computes effective auth credentials.
-3. Script validates credentials against deny-list (`change-me`, `change-me-strong-password`, `comu`, `adminwiz`, empty).
+3. Script validates credentials against deny-list (placeholders, weak legacy values, empty).
 4. If insecure values are detected, user receives explicit warning with remediation step.
 5. During container startup, Nginx auth generator uses provided credentials and writes `/tmp/.htpasswd`.
 

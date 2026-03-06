@@ -20,14 +20,14 @@
 Run:
 
 ```bash
-BASIC_AUTH_USER=comu BASIC_AUTH_PASS=adminwiz ./scripts/bootstrap-and-deploy.sh --setup-only
+BASIC_AUTH_USER=change-me BASIC_AUTH_PASS=change-me-strong-password ./scripts/bootstrap-and-deploy.sh --setup-only
 ```
 
 Expected: output only warns about placeholder values, but does not identify weak legacy defaults.
 
 **Step 2: Implement minimal secure validation**
 
-- Replace `comu/adminwiz` fallbacks with `change-me`/`change-me-strong-password`.
+- Replace weak legacy fallbacks with `change-me`/`change-me-strong-password`.
 - Add deny-list validation for empty, placeholder, and weak legacy values.
 - Emit a strong warning with exact remediation (`editar .env`).
 
@@ -46,7 +46,7 @@ Expected: no output, exit code 0.
 Run:
 
 ```bash
-BASIC_AUTH_USER=comu BASIC_AUTH_PASS=adminwiz ./scripts/bootstrap-and-deploy.sh --setup-only
+BASIC_AUTH_USER=change-me BASIC_AUTH_PASS=change-me-strong-password ./scripts/bootstrap-and-deploy.sh --setup-only
 ```
 
 Expected: explicit warning that legacy weak credentials are insecure.
@@ -61,7 +61,7 @@ Expected: explicit warning that legacy weak credentials are insecure.
 Run:
 
 ```bash
-BASIC_AUTH_USER=comu BASIC_AUTH_PASS=adminwiz ./actualizar
+BASIC_AUTH_USER=change-me BASIC_AUTH_PASS=change-me-strong-password ./actualizar
 ```
 
 Expected: no warning for weak credentials.
@@ -76,7 +76,7 @@ Expected: no warning for weak credentials.
 Run:
 
 ```bash
-bash -n actualizar && BASIC_AUTH_USER=comu BASIC_AUTH_PASS=adminwiz ./actualizar
+bash -n actualizar && BASIC_AUTH_USER=change-me BASIC_AUTH_PASS=change-me-strong-password ./actualizar
 ```
 
 Expected: syntax passes and warning appears.
@@ -92,7 +92,7 @@ Expected: syntax passes and warning appears.
 Run:
 
 ```bash
-rg -n "comu|adminwiz" nginx/40-generate-basic-auth.sh ../web-telecom/infra/docker/nginx/40-generate-basic-auth.sh
+rg -n "change-me" nginx/40-generate-basic-auth.sh ../web-telecom/infra/docker/nginx/40-generate-basic-auth.sh
 ```
 
 Expected: both files match.
@@ -107,7 +107,7 @@ Expected: both files match.
 Run:
 
 ```bash
-bash -n nginx/40-generate-basic-auth.sh && bash -n ../web-telecom/infra/docker/nginx/40-generate-basic-auth.sh && rg -n "comu|adminwiz" nginx/40-generate-basic-auth.sh ../web-telecom/infra/docker/nginx/40-generate-basic-auth.sh
+bash -n nginx/40-generate-basic-auth.sh && bash -n ../web-telecom/infra/docker/nginx/40-generate-basic-auth.sh && rg -n "change-me" nginx/40-generate-basic-auth.sh ../web-telecom/infra/docker/nginx/40-generate-basic-auth.sh
 ```
 
 Expected: syntax passes; ripgrep returns no matches.
@@ -125,7 +125,7 @@ Expected: syntax passes; ripgrep returns no matches.
 Run:
 
 ```bash
-rg -n "comu|adminwiz|versionar \\.env|cambiar credenciales" README.md ../web-telecom/README.md .env.example ../web-telecom/.env.stack.example
+rg -n "change-me|versionar \\.env|cambiar credenciales" README.md ../web-telecom/README.md .env.example ../web-telecom/.env.stack.example
 ```
 
 Expected: docs may mention credential change but not explicit deny-list/rotation workflow.
