@@ -5,6 +5,9 @@ services:
       dockerfile: nginx/Dockerfile
     image: telecom-deploy-nginx:latest
     restart: unless-stopped
+    environment:
+      BASIC_AUTH_USER: "${BASIC_AUTH_USER:-change-me}"
+      BASIC_AUTH_PASS: "${BASIC_AUTH_PASS:-change-me-strong-password}"
     depends_on:
       spa:
         condition: service_healthy
