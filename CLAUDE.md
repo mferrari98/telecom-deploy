@@ -45,13 +45,22 @@ bash -n setup
 bash -n actualizar
 bash -n scripts/bootstrap-and-deploy.sh
 sh -n nginx/40-generate-basic-auth.sh
+sh -n nginx/50-generate-selfsigned-cert.sh
 ```
 
 ### SPA commands (from `sources/telecom-spa`)
 ```bash
 pnpm install && pnpm build:spa        # full build
 pnpm dev:spa                           # dev mode
+pnpm typecheck                         # all packages
 pnpm --filter @telecom/spa typecheck   # single-package typecheck
+pnpm docker:build:spa                  # build Docker image locally
+```
+
+### reportespiolis commands (from `sources/telecom-reportespiolis`)
+```bash
+npm ci && npm start     # install + run
+# Note: npm test intentionally fails ("no test specified")
 ```
 
 ### Smoke test (running stack)
@@ -66,19 +75,22 @@ curl -k -sS -o /dev/null -w "%{http_code}\n" https://localhost/           # expe
 nginx/                  Reverse proxy: self-signed TLS, Basic Auth, security headers
   nginx.conf            Route rules: / → spa:3000, /reporte/ → reportespiolis:3000, /healthz → 200
   Dockerfile            Alpine + OpenSSL cert generation
-  40-generate-basic-auth.sh   Generates .htpasswd at container start
+  40-generate-basic-auth.sh       Generates .htpasswd at container start
+  50-generate-selfsigned-cert.sh  Generates self-signed TLS cert at container start
 
 dockerfiles/
   spa.Dockerfile        Multi-stage (node:20, pnpm, turbo). Outputs to /app/data/
   reportespiolis.Dockerfile   Single-stage (node:20-slim + Puppeteer/Chrome deps)
 
 scripts/
+  common.sh             Shared helpers: .env loading, repo URL defaults, credential checks
   bootstrap-and-deploy.sh     Core logic for cloning repos and env preparation
 
 setup                   Entry point for first-time setup (wraps bootstrap-and-deploy.sh --setup-only)
 actualizar              Check/update repos, optional --update and --deploy flags
 
-sources/                Gitignored. Local clones of telecom-spa and telecom-reportespiolis
+sources/                Gitignored. Local clones of telecom-spa and telecom-reportespiolis.
+                        Edits there are NOT committed to telecom-deploy.
 ```
 
 ## Code Conventions
@@ -106,5 +118,6 @@ sources/                Gitignored. Local clones of telecom-spa and telecom-repo
 
 - `.env` is local-only (gitignored). `.env.example` has placeholders only.
 - Never commit real credentials. Weak/legacy values and placeholders trigger script warnings.
+- Generate `SESSION_SECRET` with: `openssl rand -hex 32`
 - Do not weaken TLS/auth defaults or remove healthchecks unless explicitly requested.
-- Env loading pattern: `set -a; . ./.env; set +a`
+- Env loading pattern: `set -a; . ./.env; set +a` (handled by `scripts/common.sh`)

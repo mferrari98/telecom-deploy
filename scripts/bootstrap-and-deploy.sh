@@ -60,6 +60,18 @@ if [ ! -f "${REPORTES_DIR}/.env" ]; then
   fi
 fi
 
+# Ensure host-side bind-mount directories exist with correct ownership
+# (UID 1000 = node user inside the container)
+for dir in data/reportes data/reportes-logs; do
+  if [ ! -d "${ROOT_DIR}/${dir}" ]; then
+    mkdir -p "${ROOT_DIR}/${dir}"
+  fi
+  if [ "$(stat -c '%u' "${ROOT_DIR}/${dir}")" != "1000" ]; then
+    echo "[info] Fixing ownership of ${dir} → UID 1000"
+    chown 1000:1000 "${ROOT_DIR}/${dir}"
+  fi
+done
+
 if [ "${DEPLOY}" -eq 1 ]; then
   docker compose -p webtelecom up -d --build --remove-orphans "${COMPOSE_ARGS[@]}"
 else

@@ -81,7 +81,8 @@ COPY sitios.json ./
 COPY index.js ./
 COPY src ./src
 
-RUN chown -R node:node /app
+RUN mkdir -p /app/logs /app/data \
+ && chown -R node:node /app
 
 USER node
 

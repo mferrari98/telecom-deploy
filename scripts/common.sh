@@ -9,7 +9,10 @@ set -euo pipefail
 
 if [ ! -f "${ROOT_DIR}/.env" ]; then
   cp "${ROOT_DIR}/.env.example" "${ROOT_DIR}/.env"
+  GENERATED_SECRET="$(openssl rand -hex 32)"
+  sed -i "s|change-me-to-a-random-64-char-string|${GENERATED_SECRET}|" "${ROOT_DIR}/.env"
   echo "[info] Se creo .env desde .env.example"
+  echo "[info] SESSION_SECRET generado automaticamente"
 fi
 
 set -a

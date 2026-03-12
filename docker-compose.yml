@@ -54,6 +54,9 @@ services:
       INTERNALS_XLSX_PATH: /app/data/internos.xlsx
       SESSION_SECRET: "${SESSION_SECRET:-change-me-to-a-random-64-char-string}"
       USERS_JSON_PATH: /app/data/users.json
+      USER_ADMIN_PASSWORD: "${USER_ADMIN_PASSWORD}"
+      USER_OPERADOR_PASSWORD: "${USER_OPERADOR_PASSWORD}"
+      USER_SERVICOOP_PASSWORD: "${USER_SERVICOOP_PASSWORD}"
     volumes:
       - ./data/spa:/app/data
     read_only: true
@@ -92,7 +95,7 @@ services:
     environment:
       DB_PATH: /app/data/database.sqlite
     volumes:
-      - "${COMPARTIDO_PATH:-/mnt/compartido}:/mnt/compartido:ro"
+      - /mnt/compartido:/mnt/compartido:ro
       - ./data/reportes:/app/data
       - ./data/reportes-logs:/app/logs
     tmpfs:

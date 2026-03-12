@@ -1,36 +1,29 @@
-FROM node:20-bookworm-slim AS base
-
-WORKDIR /app
-
-FROM base AS builder
+FROM node:20-bookworm-slim AS builder
 
 ARG INSECURE_TLS_BUILD=0
 
-RUN NODE_TLS_REJECT_UNAUTHORIZED="$((1 - INSECURE_TLS_BUILD))" \
-    npm install -g pnpm@9.15.3
+WORKDIR /app
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && NODE_TLS_REJECT_UNAUTHORIZED="$((1 - INSECURE_TLS_BUILD))" \
+     npm install -g pnpm@9.15.3
 
 COPY . .
 
 RUN printf '%s\n' \
-      'openssl_conf = openssl_init' \
-      '[openssl_init]' \
-      'ssl_conf = ssl_sect' \
-      '[ssl_sect]' \
-      'system_default = system_default_sect' \
-      '[system_default_sect]' \
-      'Options = UnsafeLegacyRenegotiation' \
-      > /tmp/openssl-legacy.cnf \
+      'openssl_conf = openssl_init' '[openssl_init]' \
+      'ssl_conf = ssl_sect' '[ssl_sect]' \
+      'system_default = system_default_sect' '[system_default_sect]' \
+      'Options = UnsafeLegacyRenegotiation' > /tmp/openssl-legacy.cnf \
   && NODE_OPTIONS="--openssl-config=/tmp/openssl-legacy.cnf --openssl-shared-config" \
      NODE_TLS_REJECT_UNAUTHORIZED="$((1 - INSECURE_TLS_BUILD))" \
      pnpm install --frozen-lockfile \
-  && rm -f /tmp/openssl-legacy.cnf
-RUN pnpm --filter @telecom/spa build
+  && rm -f /tmp/openssl-legacy.cnf \
+  && pnpm --filter @telecom/spa build
 
-FROM base AS runner
+FROM node:20-alpine AS runner
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
