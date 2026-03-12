@@ -16,13 +16,22 @@ Solo `nginx` publica puerto al host (HTTPS). `spa` y `reportespiolis` quedan den
 cp .env.example .env
 ```
 
-Variables principales:
+<!-- AUTO-GENERATED: env-vars -->
+| Variable | Requerida | Descripcion |
+|----------|-----------|-------------|
+| `SESSION_SECRET` | Si | Secreto para firmar tokens de sesion. Se genera automaticamente en el primer `./setup` |
+| `USER_ADMIN_PASSWORD` | Si | Contraseña del usuario admin |
+| `USER_OPERADOR_PASSWORD` | Si | Contraseña del usuario operador |
+| `USER_SERVICOOP_PASSWORD` | Si | Contraseña del usuario servicoop |
+<!-- /AUTO-GENERATED: env-vars -->
+
+Variables con defaults (no requieren `.env`):
 
 - `WEB_HTTPS_PORT` (default `443`)
-- `BASIC_AUTH_USER` y `BASIC_AUTH_PASS` (obligatorio cambiar valores por defecto)
+- `WEB_HTTP_PORT` (default `80`)
 - `SPA_INSECURE_TLS_BUILD` (default `0`, usar `1` solo ante problemas de CA en redes internas)
-- `SPA_REPO_URL` y `SPA_REF`
-- `REPORTES_REPO_URL` y `REPORTES_REF`
+- `SPA_REPO_URL` y `SPA_REF` (defaults en `scripts/common.sh`)
+- `REPORTES_REPO_URL` y `REPORTES_REF` (defaults en `scripts/common.sh`)
 
 Defaults de guardias en SPA (si no se definen vars en entorno):
 
@@ -45,7 +54,7 @@ Politica de secretos:
 ```bash
 git clone https://github.com/mferrari98/telecom-deploy.git
 cd telecom-deploy
-cp .env.example .env
+cp .env.example .env    # editar contraseñas
 ./setup
 docker compose -p webtelecom up -d --build --remove-orphans
 ```
@@ -54,7 +63,9 @@ El script hace todo esto automaticamente:
 
 - clona/actualiza `telecom-spa` en `sources/telecom-spa`
 - clona/actualiza `telecom-reportespiolis` en `sources/telecom-reportespiolis`
-- crea `.env` faltantes
+- crea `.env` si falta (genera `SESSION_SECRET` automaticamente)
+- crea directorios de datos (`data/spa`, `data/reportes`, `data/reportes-logs`)
+- copia `users.json` inicial a `data/spa/`
 
 Al finalizar `./setup`, el entorno queda preparado y muestra el comando para arrancar contenedores.
 
@@ -68,7 +79,7 @@ Los builds se realizan desde esos fuentes clonados usando Dockerfiles controlado
 
 ## Scripts principales
 
-- `./setup`: clona/actualiza repos (HTTPS), prepara `.env` faltantes y deja el entorno listo sin arrancar contenedores.
+- `./setup`: clona repos, prepara `.env`, crea directorios y deja el entorno listo sin arrancar contenedores.
 - `./actualizar`: revisa cambios entre local y remoto en `telecom-deploy`, `telecom-spa` y `telecom-reportespiolis`.
 
 Opciones de `actualizar`:
@@ -100,11 +111,12 @@ docker compose -p webtelecom logs -f nginx
 
 ## Carga de internos.xlsx desde la web
 
-Con el stack levantado y usuario autenticado por Basic Auth:
+Con el stack levantado y usuario autenticado:
 
 1. Abrir `https://HOST/`.
-2. Entrar en `Busqueda internos`.
-3. Hacer click en `Cargar documento` y seleccionar un archivo `.xlsx`.
+2. Iniciar sesion con un usuario con permisos de admin.
+3. Entrar en `Busqueda internos`.
+4. Hacer click en `Cargar documento` y seleccionar un archivo `.xlsx`.
 
 La SPA sube el archivo a `INTERNALS_XLSX_PATH` (por defecto `/app/data/internos.xlsx`) y refresca el cache de internos automaticamente.
 
