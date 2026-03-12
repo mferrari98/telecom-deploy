@@ -30,6 +30,26 @@ clone_repo() {
 clone_repo "$SPA_REPO_URL" "$SPA_REF" "$SPA_DIR"
 clone_repo "$REPORTES_REPO_URL" "$REPORTES_REF" "$REPORTES_DIR"
 
+DATA_SPA_DIR="${ROOT_DIR}/data/spa"
+DATA_REPORTES_DIR="${ROOT_DIR}/data/reportes"
+DATA_REPORTES_LOGS_DIR="${ROOT_DIR}/data/reportes-logs"
+
+mkdir -p "${DATA_SPA_DIR}" "${DATA_REPORTES_DIR}" "${DATA_REPORTES_LOGS_DIR}"
+
+# Asegurar que el user node (uid 1000) pueda escribir en los volumenes
+for dir in "${DATA_SPA_DIR}" "${DATA_REPORTES_DIR}" "${DATA_REPORTES_LOGS_DIR}"; do
+  if [ ! -w "${dir}" ]; then
+    echo "[warn] ${dir} no es escribible, intentando corregir permisos..."
+    sudo chown -R "$(id -u):$(id -g)" "${dir}" 2>/dev/null \
+      || echo "[error] No se pudo corregir ${dir}. Ejecuta: sudo chown -R \$(id -u):\$(id -g) ${dir}"
+  fi
+done
+
+if [ ! -f "${DATA_SPA_DIR}/users.json" ]; then
+  cp "${SPA_DIR}/data/spa/users.json" "${DATA_SPA_DIR}/users.json"
+  echo "[info] Creado ${DATA_SPA_DIR}/users.json"
+fi
+
 if [ ! -f "${REPORTES_DIR}/.env" ]; then
   if [ -f "${REPORTES_DIR}/example-env" ]; then
     cp "${REPORTES_DIR}/example-env" "${REPORTES_DIR}/.env"
