@@ -20,6 +20,7 @@ cp .env.example .env
 | Variable | Requerida | Descripcion |
 |----------|-----------|-------------|
 | `SESSION_SECRET` | Si | Secreto para firmar tokens de sesion. Se genera automaticamente en el primer `./setup` |
+| `SESSION_COOKIE_SECURE` | No | Activa cookies `Secure` para sesiones. El default es `1`; usar `0` solo para diagnostico o entornos HTTP locales |
 | `USER_ADMIN_PASSWORD` | Si | Contraseña del usuario admin |
 | `USER_OPERADOR_PASSWORD` | Si | Contraseña del usuario operador |
 | `USER_SERVICOOP_PASSWORD` | Si | Contraseña del usuario servicoop |
