@@ -45,7 +45,6 @@ docker compose -p webtelecom ps
 ```bash
 bash -n setup
 bash -n actualizar
-bash -n scripts/bootstrap-and-deploy.sh
 sh -n nginx/50-generate-selfsigned-cert.sh
 ```
 
@@ -84,7 +83,6 @@ dockerfiles/
 
 scripts/
   common.sh             Shared helpers: .env loading, repo URL defaults, credential checks
-  bootstrap-and-deploy.sh     Core logic for cloning repos and env preparation
 
 setup                   Entry point for first-time setup (clones repos, creates data dirs, copies users.json)
 actualizar              Check/update repos, optional --update and --deploy flags
