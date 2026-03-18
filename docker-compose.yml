@@ -89,6 +89,8 @@ services:
     build:
       context: ./sources/telecom-reportespiolis
       dockerfile: ../../dockerfiles/reportespiolis.Dockerfile
+      args:
+        INSECURE_TLS_BUILD: "${REPORTES_INSECURE_TLS_BUILD:-0}"
     image: telecom-reportespiolis:local
     restart: unless-stopped
     env_file:

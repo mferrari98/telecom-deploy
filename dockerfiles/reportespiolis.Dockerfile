@@ -1,5 +1,7 @@
 FROM node:20-slim AS builder
 
+ARG INSECURE_TLS_BUILD=0
+
 WORKDIR /app
 
 RUN set -eux; \
@@ -13,6 +15,7 @@ RUN set -eux; \
         success=1; \
         break; \
       fi; \
+      apt-get -y --fix-broken install || true; \
       echo "apt install failed on attempt ${attempt}, retrying..."; \
       sleep 5; \
     done; \
@@ -23,7 +26,7 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN NODE_TLS_REJECT_UNAUTHORIZED="$((1 - INSECURE_TLS_BUILD))" npm ci
 
 # ---
 

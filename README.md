@@ -31,6 +31,7 @@ Variables con defaults (no requieren `.env`):
 - `WEB_HTTPS_PORT` (default `443`)
 - `WEB_HTTP_PORT` (default `80`)
 - `SPA_INSECURE_TLS_BUILD` (default `0`, usar `1` solo ante problemas de CA en redes internas)
+- `REPORTES_INSECURE_TLS_BUILD` (default `0`, usar `1` solo ante problemas de CA en redes internas)
 - `SPA_REPO_URL` y `SPA_REF` (defaults en `scripts/common.sh`)
 - `REPORTES_REPO_URL` y `REPORTES_REF` (defaults en `scripts/common.sh`)
 
