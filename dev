@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT="webtelecom"
+BASE_FILE="${ROOT_DIR}/docker-compose.yml"
+DEV_FILE="${ROOT_DIR}/docker-compose.dev.yml"
+
+usage() {
+  cat <<'EOF'
+Usage: ./dev <command> [args]
+
+Commands:
+  up                 Start dev stack (detached)
+  down               Stop dev stack
+  ps                 Show service status
+  logs [service]     Follow logs (all services or one)
+  restart [service]  Restart service(s)
+EOF
+}
+
+require_prereqs() {
+  command -v docker >/dev/null 2>&1 || {
+    echo "[error] docker no encontrado"
+    exit 1
+  }
+
+  docker compose version >/dev/null 2>&1 || {
+    echo "[error] Docker Compose v2 no disponible"
+    exit 1
+  }
+
+  [ -f "${BASE_FILE}" ] || {
+    echo "[error] Falta ${BASE_FILE}"
+    exit 1
+  }
+
+  [ -f "${DEV_FILE}" ] || {
+    echo "[error] Falta ${DEV_FILE}. Ejecuta este comando desde la raiz del repo."
+    exit 1
+  }
+}
+
+compose() {
+  docker compose -p "${PROJECT}" -f "${BASE_FILE}" -f "${DEV_FILE}" "$@"
+}
+
+require_prereqs
+
+if [ $# -lt 1 ]; then
+  usage
+  exit 1
+fi
+
+cmd="$1"
+
+case "${cmd}" in
+  up)
+    compose up -d --remove-orphans
+    ;;
+  down)
+    compose down
+    ;;
+  ps)
+    compose ps
+    ;;
+  logs)
+    shift || true
+    compose logs -f "$@"
+    ;;
+  restart)
+    shift || true
+    compose restart "$@"
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac

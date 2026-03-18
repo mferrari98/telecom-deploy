@@ -1,0 +1,35 @@
+services:
+  spa:
+    deploy: !reset null
+    build: !reset null
+    image: node:20-bookworm-slim
+    user: "1000:1000"
+    working_dir: /app
+    command: >-
+      sh -lc "([ -d node_modules/.pnpm ] || (corepack pnpm install --frozen-lockfile --store-dir /app/.pnpm-store || corepack pnpm install --store-dir /app/.pnpm-store)) && corepack pnpm --filter @telecom/spa dev"
+    environment:
+      NODE_ENV: development
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      CHOKIDAR_USEPOLLING: "1"
+      WATCHPACK_POLLING: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      DEUDORES_DB_PATH: /app/data/deudores.sqlite
+      INTERNALS_XLSX_PATH: /app/data/internos.xlsx
+      USERS_JSON_PATH: /app/data/users.json
+      SESSION_SECRET: "${SESSION_SECRET:-change-me-to-a-random-64-char-string}"
+      SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-1}"
+      USER_ADMIN_PASSWORD: "${USER_ADMIN_PASSWORD}"
+      USER_OPERADOR_PASSWORD: "${USER_OPERADOR_PASSWORD}"
+      USER_SERVICOOP_PASSWORD: "${USER_SERVICOOP_PASSWORD}"
+    volumes:
+      - ./sources/telecom-spa:/app
+      - ./data/spa:/app/data
+    read_only: false
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 10

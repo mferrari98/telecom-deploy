@@ -111,6 +111,28 @@ Ver logs:
 docker compose -p webtelecom logs -f nginx
 ```
 
+## Desarrollo con hot reload (solo SPA)
+
+Este flujo es solo para desarrollo. El deploy tradicional de produccion no cambia.
+
+```bash
+./dev up
+./dev logs spa
+./dev down
+```
+
+Detalles:
+
+- `./dev` combina `docker-compose.yml` + `docker-compose.dev.yml` y mantiene Nginx en `https://localhost`.
+- La SPA corre en modo desarrollo con hot reload: cambios en `sources/telecom-spa` se reflejan sin rebuild de imagen.
+- `reportespiolis` sigue en modo normal dentro del mismo stack.
+
+Si el entorno viene de ejecuciones viejas con artefactos root-owned (por ejemplo `apps/spa/.next`), corregi permisos una vez antes de levantar dev:
+
+```bash
+docker run --rm -v "$(pwd)/sources/telecom-spa:/repo" alpine sh -c "chown -R 1000:1000 /repo/apps/spa/.next"
+```
+
 ## Carga de internos.xlsx desde la web
 
 Con el stack levantado y usuario autenticado:
