@@ -1464,14 +1464,16 @@ export function detectAnomalies(sinceEtiempo: number): void {
   const configDb = getConfigDb();
 
   // Compute stats per site/variable from all historical data
+  // Uses algebraic variance formula: stddev = sqrt(avg(x^2) - avg(x)^2) for O(n) single-pass
   const stats = reportesDb
     .prepare(`
       SELECT
         sitio_id, tipo_id,
         AVG(valor) as avg_val,
-        CASE WHEN COUNT(*) >= ? THEN
-          SQRT(SUM((valor - (SELECT AVG(h2.valor) FROM historico_lectura h2 WHERE h2.sitio_id = historico_lectura.sitio_id AND h2.tipo_id = historico_lectura.tipo_id)) * (valor - (SELECT AVG(h2.valor) FROM historico_lectura h2 WHERE h2.sitio_id = historico_lectura.sitio_id AND h2.tipo_id = historico_lectura.tipo_id))) / COUNT(*))
-        ELSE NULL END as stddev_val
+        CASE WHEN COUNT(*) >= ?
+          THEN SQRT(AVG(valor * valor) - AVG(valor) * AVG(valor))
+          ELSE NULL
+        END as stddev_val
       FROM historico_lectura
       GROUP BY sitio_id, tipo_id
       HAVING COUNT(*) >= ?
