@@ -10,6 +10,8 @@ services:
         condition: service_healthy
       reportespiolis:
         condition: service_healthy
+      informe-agua:
+        condition: service_healthy
     ports:
       - "${WEB_HTTP_PORT:-80}:80"
       - "${WEB_HTTPS_PORT:-443}:443"
@@ -117,6 +119,52 @@ services:
         limits:
           cpus: "2.0"
           memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - telecom_network
+
+  informe-agua:
+    build:
+      context: ./sources/telecom-informe-agua
+      dockerfile: ../../dockerfiles/informe-agua.Dockerfile
+      args:
+        INSECURE_TLS_BUILD: "${INFORME_AGUA_INSECURE_TLS_BUILD:-0}"
+    image: telecom-informe-agua:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      SESSION_SECRET: "${SESSION_SECRET:-change-me-to-a-random-64-char-string}"
+      REPORTES_DB_PATH: /app/data/reportes/database.sqlite
+      LOCAL_DB_PATH: /app/data/local/config.sqlite
+      WORKER_INTERVAL_MS: "${WORKER_INTERVAL_MS:-300000}"
+    volumes:
+      - ./data/reportes:/app/data/reportes
+      - ./data/informe-agua:/app/data/local
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      reportespiolis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/informe-agua/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
     logging:
       driver: json-file
       options:
