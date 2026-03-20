@@ -200,7 +200,7 @@ informe-agua:
       max-size: "10m"
       max-file: "3"
   healthcheck:
-    test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r => { if (!r.ok) throw 1 })"]
+    test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/informe-agua/').then(r => { if (!r.ok) throw 1 })"]
     interval: 30s
     timeout: 10s
     retries: 3
@@ -219,7 +219,13 @@ location ~ ^/informe-agua/_next/static/ {
     proxy_pass http://informe-agua:3000;
     proxy_http_version 1.1;
     expires 365d;
+    access_log off;
     add_header Cache-Control "public, immutable";
+}
+
+# Bare /informe-agua → /informe-agua/ redirect
+location = /informe-agua {
+    return 301 /informe-agua/;
 }
 
 # informe-agua application routes
