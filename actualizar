@@ -108,5 +108,6 @@ echo -e "${BLUE}Revisando repos...${RESET}\n"
 check_repo "telecom-deploy" "$ROOT_DIR" "main"
 check_repo "telecom-spa" "${SOURCES_DIR}/telecom-spa" "$SPA_REF"
 check_repo "telecom-reportespiolis" "${SOURCES_DIR}/telecom-reportespiolis" "$REPORTES_REF"
+check_repo "telecom-informe-agua" "${SOURCES_DIR}/telecom-informe-agua" "$INFORME_AGUA_REF"
 
 echo -e "Para redesplegar: ${BLUE}docker compose -p webtelecom up -d --build --remove-orphans${RESET}"
