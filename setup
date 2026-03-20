@@ -8,6 +8,7 @@ warn_insecure_credentials
 
 SPA_DIR="${SOURCES_DIR}/telecom-spa"
 REPORTES_DIR="${SOURCES_DIR}/telecom-reportespiolis"
+INFORME_AGUA_DIR="${SOURCES_DIR}/telecom-informe-agua"
 
 mkdir -p "${SOURCES_DIR}"
 
@@ -29,15 +30,17 @@ clone_repo() {
 
 clone_repo "$SPA_REPO_URL" "$SPA_REF" "$SPA_DIR"
 clone_repo "$REPORTES_REPO_URL" "$REPORTES_REF" "$REPORTES_DIR"
+clone_repo "$INFORME_AGUA_REPO_URL" "$INFORME_AGUA_REF" "$INFORME_AGUA_DIR"
 
 DATA_SPA_DIR="${ROOT_DIR}/data/spa"
 DATA_REPORTES_DIR="${ROOT_DIR}/data/reportes"
 DATA_REPORTES_LOGS_DIR="${ROOT_DIR}/data/reportes-logs"
+DATA_INFORME_AGUA_DIR="${ROOT_DIR}/data/informe-agua"
 
-mkdir -p "${DATA_SPA_DIR}" "${DATA_REPORTES_DIR}" "${DATA_REPORTES_LOGS_DIR}"
+mkdir -p "${DATA_SPA_DIR}" "${DATA_REPORTES_DIR}" "${DATA_REPORTES_LOGS_DIR}" "${DATA_INFORME_AGUA_DIR}"
 
 # Asegurar que el user node (uid 1000) pueda escribir en los volumenes
-for dir in "${DATA_SPA_DIR}" "${DATA_REPORTES_DIR}" "${DATA_REPORTES_LOGS_DIR}"; do
+for dir in "${DATA_SPA_DIR}" "${DATA_REPORTES_DIR}" "${DATA_REPORTES_LOGS_DIR}" "${DATA_INFORME_AGUA_DIR}"; do
   if [ ! -w "${dir}" ]; then
     echo "[warn] ${dir} no es escribible, intentando corregir permisos..."
     sudo chown -R "$(id -u):$(id -g)" "${dir}" 2>/dev/null \
