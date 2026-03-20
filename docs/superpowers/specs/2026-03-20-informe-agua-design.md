@@ -35,7 +35,7 @@ informe-agua (Next.js):
 
 **Repo:** `telecom-informe-agua` (github.com/mferrari98/telecom-informe-agua)
 
-**Stack:** Next.js (standalone), Node 20, pnpm, Recharts, SQLite (better-sqlite3)
+**Stack:** Next.js (standalone, `basePath: '/informe-agua'`), Node 20, pnpm, Recharts, SQLite (better-sqlite3)
 
 ## Data Sources
 
@@ -52,6 +52,8 @@ Source: `data/reportes/database.sqlite` (~10MB, growing)
 
 Indexes: `(sitio_id, tipo_id)` and `(etiempo DESC)` on `historico_lectura`.
 
+**SQLite concurrency:** reportespiolis uses `node-sqlite3` with default rollback journal mode (not WAL). With rollback journal, readers see the last committed state and do not require `-wal`/`-shm` files. The volume is mounted read-write (not `:ro`) but `better-sqlite3` opens the connection with `readonly: true` to prevent accidental writes. A `busy_timeout` of 5000ms is configured to handle brief lock contention during reportespiolis writes.
+
 ### Local config database (read-write)
 
 Source: `data/informe-agua/config.sqlite`
@@ -64,6 +66,9 @@ Source: `data/informe-agua/config.sqlite`
 | `alertas` | Custom thresholds per user/site/variable |
 | `preferencias` | UI preferences per user |
 | `worker_state` | Last processed etiempo, worker status |
+| `schema_version` | Current schema version for migration tracking |
+
+**Schema management:** tables are created on first startup via `CREATE TABLE IF NOT EXISTS`. A `schema_version` table tracks the current version number. On startup, a simple migration runner applies any pending migrations sequentially.
 
 ## Pages and Features
 
@@ -111,20 +116,32 @@ Source: `data/informe-agua/config.sqlite`
 
 **Benefit:** dashboards read from pre-computed tables, no heavy queries against reportespiolis database at request time.
 
+**Error handling:** the worker wraps each cycle in try/catch. On failure, it logs the error with `[error]` tag and retries on the next interval with exponential backoff (up to 30 min max). It never crashes the main Next.js process. A `last_error` column in `worker_state` records the latest failure for healthcheck visibility.
+
 ## Authentication
 
 Shared session with the SPA — no separate login.
 
+**Cookie contract (from `telecom-spa/apps/spa/lib/auth.ts`):**
+
+- **Cookie name:** `__session`
+- **Cookie path:** `/` (sent to all routes including `/informe-agua/`)
+- **Format:** `<payloadB64url>.<signatureB64url>`
+- **Signing:** HMAC-SHA256 using `SESSION_SECRET` via Web Crypto API (`crypto.subtle`)
+- **Payload:** `{ sub: string, role: string, exp: number }` (JSON, base64url-encoded)
+- **Validation:** decode payload, verify HMAC signature, check `exp` > now
+- **Secure flag:** controlled by `SESSION_COOKIE_SECURE` env var (default: true in production)
+
 **Flow:**
 
 1. User logs into SPA (`/`)
-2. Receives session cookie signed with `SESSION_SECRET`
-3. Navigates to `/informe-agua/` — Nginx routes to new service
-4. informe-agua reads cookie, verifies signature with same `SESSION_SECRET`
-5. Valid → extract user, allow access
-6. Invalid or missing → redirect to `/` (SPA login)
+2. Receives `__session` cookie signed with HMAC-SHA256 using `SESSION_SECRET`
+3. Navigates to `/informe-agua/` — cookie is sent (path is `/`)
+4. informe-agua middleware reads `__session`, verifies HMAC-SHA256 with same `SESSION_SECRET`
+5. Valid + not expired → extract `sub` (username) and `role`, allow access
+6. Invalid or missing → redirect to `/login`
 
-**Requirement:** replicate SPA's cookie validation logic. Exact format determined during implementation by reading telecom-spa auth code.
+**Implementation:** port the `verifyToken()` function from the SPA's `lib/auth.ts` to a shared utility in informe-agua. Uses only Web Crypto API (available in Node 20+), no external dependencies.
 
 **Env vars:** `SESSION_SECRET` (same as SPA, already in `.env`). No `users.json` or passwords needed — only validates sessions, does not authenticate.
 
@@ -146,10 +163,9 @@ Shared session with the SPA — no separate login.
 ```yaml
 informe-agua:
   build:
-    context: .
-    dockerfile: dockerfiles/informe-agua.Dockerfile
+    context: ./sources/telecom-informe-agua
+    dockerfile: ../../dockerfiles/informe-agua.Dockerfile
   restart: unless-stopped
-  ports: []
   expose:
     - "3000"
   environment:
@@ -159,7 +175,7 @@ informe-agua:
     - LOCAL_DB_PATH=/app/data/local/config.sqlite
     - WORKER_INTERVAL_MS=${WORKER_INTERVAL_MS:-300000}
   volumes:
-    - ./data/reportes:/app/data/reportes:ro
+    - ./data/reportes:/app/data/reportes
     - ./data/informe-agua:/app/data/local
   depends_on:
     reportespiolis:
@@ -177,7 +193,7 @@ informe-agua:
     resources:
       limits:
         cpus: "1"
-        memory: 512M
+        memory: 768M
   logging:
     driver: json-file
     options:
@@ -191,17 +207,30 @@ informe-agua:
     start_period: 30s
 ```
 
-### nginx/nginx.conf — new route
+**Note:** nginx's `depends_on` block must also be updated to include `informe-agua: condition: service_healthy`.
+
+### nginx/nginx.conf — new routes
+
+Next.js is configured with `basePath: '/informe-agua'`, so it expects requests with the prefix intact. The `proxy_pass` has no trailing slash (no prefix stripping).
 
 ```nginx
+# Static assets for informe-agua (aggressive caching)
+location ~ ^/informe-agua/_next/static/ {
+    proxy_pass http://informe-agua:3000;
+    proxy_http_version 1.1;
+    expires 365d;
+    add_header Cache-Control "public, immutable";
+}
+
+# informe-agua application routes
 location /informe-agua/ {
     limit_req zone=api burst=20 nodelay;
-    proxy_pass http://informe-agua:3000/;
+    proxy_pass http://informe-agua:3000;
+    proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Prefix /informe-agua;
     proxy_read_timeout 120s;
 }
 ```
@@ -211,12 +240,13 @@ location /informe-agua/ {
 Multi-stage like `spa.Dockerfile`:
 - Builder: Node 20 Bookworm Slim, pnpm, build Next.js standalone
 - Runner: Node 20 Alpine, copy standalone output, run as `node` user
+- Supports `INSECURE_TLS_BUILD` build arg (same pattern as existing Dockerfiles)
 
 ### Scripts
 
 - `setup`: add clone of `telecom-informe-agua` repo + create `data/informe-agua/` directory
 - `actualizar`: add status check for the third repo
-- `scripts/common.sh`: add `INFORME_AGUA_REPO_URL` default
+- `scripts/common.sh`: add `INFORME_AGUA_REPO_URL` and `INFORME_AGUA_REF` defaults
 
 ### .env.example
 
@@ -225,9 +255,28 @@ Add:
 WORKER_INTERVAL_MS=300000   # Worker pre-computation interval (5 min)
 ```
 
+## Logging
+
+Follows project conventions:
+- Structured log tags: `[info]`, `[warn]`, `[error]`
+- Includes module identifier prefix (e.g., `[info] WORKER - ...`, `[error] AUTH - ...`)
+- Uses `console.log`/`console.error` (captured by Docker json-file driver)
+
+## Development Workflow
+
+A `docker-compose.dev.yml` override will be added for informe-agua, following the same pattern as the existing SPA dev compose:
+- Mount `sources/telecom-informe-agua` for hot-reload
+- Use Node 20 Bookworm Slim (dev image) instead of Alpine
+- Expose port for direct access during development
+
+## Backup
+
+The `data/informe-agua/` directory should be included in any existing backup strategy. It contains user-created dashboards, alert configurations, and preferences that cannot be regenerated from the reportespiolis database.
+
 ## Out of Scope
 
 - Real-time websocket streaming (polling via worker is sufficient)
 - Multi-tenant / role-based access (all authenticated users see everything)
 - External notification channels (email/SMS alerts) — visual alerts only for now
 - Mobile-specific layout (responsive web is enough)
+- Cross-service API calls / CORS (informe-agua reads SQLite directly, no inter-service HTTP)
