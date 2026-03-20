@@ -25,6 +25,8 @@ SPA_REPO_URL="${SPA_REPO_URL:-https://github.com/mferrari98/telecom-spa.git}"
 SPA_REF="${SPA_REF:-main}"
 REPORTES_REPO_URL="${REPORTES_REPO_URL:-https://github.com/mferrari98/telecom-reportespiolis.git}"
 REPORTES_REF="${REPORTES_REF:-main}"
+INFORME_AGUA_REPO_URL="${INFORME_AGUA_REPO_URL:-https://github.com/mferrari98/telecom-informe-agua.git}"
+INFORME_AGUA_REF="${INFORME_AGUA_REF:-main}"
 
 SOURCES_DIR="${ROOT_DIR}/sources"
 
