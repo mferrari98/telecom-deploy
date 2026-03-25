@@ -23,7 +23,7 @@ RUN printf '%s\n' \
   && rm -f /tmp/openssl-legacy.cnf \
   && pnpm build
 
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
