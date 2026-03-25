@@ -21,7 +21,8 @@ RUN printf '%s\n' \
      NODE_TLS_REJECT_UNAUTHORIZED="$((1 - INSECURE_TLS_BUILD))" \
      pnpm install --frozen-lockfile \
   && rm -f /tmp/openssl-legacy.cnf \
-  && pnpm build
+  && pnpm build \
+  && pnpm rebuild better-sqlite3
 
 FROM node:20-bookworm-slim AS runner
 
