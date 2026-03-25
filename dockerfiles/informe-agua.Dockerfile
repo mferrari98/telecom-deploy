@@ -35,6 +35,12 @@ COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/public ./public
 
+# better-sqlite3 native binding is not picked up by Next.js file tracing — copy explicitly
+RUN mkdir -p /app/node_modules/.pnpm/better-sqlite3@11.10.0/node_modules/better-sqlite3/build/Release
+COPY --from=builder --chown=node:node \
+  /app/node_modules/.pnpm/better-sqlite3@11.10.0/node_modules/better-sqlite3/build/Release/better_sqlite3.node \
+  /app/node_modules/.pnpm/better-sqlite3@11.10.0/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+
 RUN mkdir -p /app/data/reportes /app/data/local && chown -R node:node /app/data
 
 USER node
